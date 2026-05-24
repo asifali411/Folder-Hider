@@ -2,7 +2,7 @@
   "name": "folder-hider",
   "displayName": "Folder Hider",
   "description": "Hide and unhide folders in the VS Code explorer to reduce clutter in large projects.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "AsifAliPM",
   "repository": {
     "type": "git",

@@ -11,6 +11,18 @@
 - Optional persistence across VS Code sessions
 - Optional hidden folder count in the status bar
 
+## Install
+
+1. Download the `.vsix` file from Releases
+2. Open VS Code
+3. Run:
+
+```bash
+code --install-extension folder-hider-0.1.0.vsix
+```
+
+Or use “Install from VSIX” in the Extensions menu.
+
 ## Usage
 
 1. Open the Explorer in VS Code.
@@ -38,27 +50,6 @@ The extension contributes these settings under `folderHider`:
 ## Extension View
 
 The extension adds a `Hidden Folders` view to the Explorer sidebar. When no folders are hidden, it shows a welcome message and usage hint.
-
-## Development
-
-### Build
-
-```bash
-npm install
-npm run compile
-```
-
-### Package
-
-```bash
-npm run package
-```
-
-### Publish
-
-```bash
-npm run publish
-```
 
 ## Project structure
 

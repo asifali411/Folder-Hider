@@ -22,3 +22,6 @@ package-lock.json
 
 # Optional editor folders
 .idea/
+
+# Release Versions
+release/
