@@ -1,0 +1,130 @@
+{
+  "name": "folder-hider",
+  "displayName": "Folder Hider",
+  "description": "Hide and unhide folders in the VS Code explorer to reduce clutter in large projects.",
+  "version": "0.0.1",
+  "publisher": "AsifAliPM",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "folder",
+    "hide",
+    "explorer",
+    "workspace",
+    "productivity"
+  ],
+  "icon": "media/icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./lib/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "folderHider.hideFolder",
+        "title": "Hide Folder",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "folderHider.unhideFolder",
+        "title": "Unhide Folder",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "folderHider.unhideAll",
+        "title": "Unhide All Folders",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "folderHider.refreshPanel",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "folderHider.hideFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "7_modification@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "folderHider.unhideAll",
+          "when": "view == folderHider.hiddenFoldersView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "folderHider.refreshPanel",
+          "when": "view == folderHider.hiddenFoldersView",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "folderHider.unhideFolder",
+          "when": "view == folderHider.hiddenFoldersView && viewItem == hiddenFolder",
+          "group": "inline"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "folderHider.hiddenFoldersView",
+          "name": "Hidden Folders",
+          "icon": "media/icon.png",
+          "contextualTitle": "Hidden Folders",
+          "when": "workbenchState != empty"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "folderHider.hiddenFoldersView",
+        "contents": "No folders are hidden.\nRight-click any folder in the Explorer and select **Hide Folder** to get started."
+      }
+    ],
+    "configuration": {
+      "title": "Folder Hider",
+      "properties": {
+        "folderHider.persistAcrossSessions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Remember hidden folders when VS Code is restarted."
+        },
+        "folderHider.showHiddenCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the number of hidden folders in the status bar."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "echo No tests yet",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.19.41",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.56.0",
+    "mocha": "^8.1.3",
+    "typescript": "^5.3.3"
+  }
+}

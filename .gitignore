@@ -1,0 +1,24 @@
+# Node dependencies
+node_modules/
+
+# Compiled output
+lib/
+
+# VS Code settings
+.vscode/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+.DS_Store
+Thumbs.db
+
+# Package manager files
+package-lock.json
+
+# Optional editor folders
+.idea/
