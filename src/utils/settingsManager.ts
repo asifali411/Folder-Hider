@@ -89,6 +89,14 @@ function setFilesExclude(exclude: Record<string, boolean>): void {
   const settings = readSettings();
   settings["files.exclude"] = exclude;
   writeSettings(settings);
+  // Also update VS Code's configuration so the change is applied immediately
+  try {
+    vscode.workspace
+      .getConfiguration()
+      .update("files.exclude", exclude, vscode.ConfigurationTarget.Workspace);
+  } catch {
+    // Best-effort: if the workspace update fails, the file write still persisted the change.
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +147,13 @@ function unexcludePath(absolutePath: string): string {
     const settings = readSettings();
     delete settings["files.exclude"];
     writeSettings(settings);
+    try {
+      vscode.workspace
+        .getConfiguration()
+        .update("files.exclude", undefined, vscode.ConfigurationTarget.Workspace);
+    } catch {
+      // ignore
+    }
   } else {
     setFilesExclude(exclude);
   }
@@ -267,6 +282,16 @@ export function unexcludeAll(managedPaths: string[]): void {
   }
 
   writeSettings(settings);
+  try {
+    const newExclude = Object.keys(exclude).length === 0 ? undefined : exclude;
+    vscode.workspace.getConfiguration().update(
+      "files.exclude",
+      newExclude,
+      vscode.ConfigurationTarget.Workspace,
+    );
+  } catch {
+    // ignore
+  }
 }
 
 /**

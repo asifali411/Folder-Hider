@@ -21,6 +21,7 @@
   ],
   "keywords": [
     "folder",
+    "file",
     "hide",
     "explorer",
     "workspace",
@@ -73,29 +74,19 @@
         },
         {
           "command": "folderHider.hideFile",
-          "when": "explorerResourceIsFile",
+          "when": "!explorerResourceIsFolder && resourceScheme == file",
           "group": "7_modification@2"
         }
       ],
       "view/title": [
         {
           "command": "folderHider.unhideAll",
-          "when": "view == folderHider.hiddenFoldersView",
+          "when": "view == folderHider.hiddenFoldersView || view == folderHider.hiddenFilesView",
           "group": "navigation@1"
         },
         {
           "command": "folderHider.refreshPanel",
-          "when": "view == folderHider.hiddenFoldersView",
-          "group": "navigation@2"
-        },
-        {
-          "command": "folderHider.unhideAll",
-          "when": "view == folderHider.hiddenFilesView",
-          "group": "navigation@1"
-        },
-        {
-          "command": "folderHider.refreshPanel",
-          "when": "view == folderHider.hiddenFilesView",
+          "when": "view == folderHider.hiddenFoldersView || view == folderHider.hiddenFilesView",
           "group": "navigation@2"
         }
       ],
@@ -138,6 +129,26 @@
       {
         "view": "folderHider.hiddenFilesView",
         "contents": "No files are hidden.\nRight-click any file in the Explorer and select **Hide File** to get started."
+      }
+    ],
+    "colors": [
+      {
+        "id": "folderHider.hiddenFolderForeground",
+        "description": "Color for hidden folder items in the Hidden Folders view.",
+        "defaults": {
+          "dark": "#E8A87C",
+          "light": "#C75B00",
+          "highContrast": "#FFB266"
+        }
+      },
+      {
+        "id": "folderHider.hiddenFileForeground",
+        "description": "Color for hidden file items in the Hidden Files view.",
+        "defaults": {
+          "dark": "#7CB8E8",
+          "light": "#0062C7",
+          "highContrast": "#66B2FF"
+        }
       }
     ],
     "configuration": {

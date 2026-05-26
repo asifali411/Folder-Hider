@@ -5,7 +5,7 @@ import {
   saveHiddenFilePaths,
   getExcludedAbsolutePaths,
 } from "../utils/settingsManager";
-import { requireWorkspaceRoot, isDirectory } from "../utils/pathHelper";
+import { requireWorkspaceRoot, isFile } from "../utils/pathHelper";
 
 /**
  * Provides the data for the "Hidden Folders and Files" tree view in the Explorer sidebar.
@@ -119,7 +119,7 @@ export class HiddenFileProvider implements vscode.TreeDataProvider<HiddenFile> {
     const currentlyExcluded = new Set(getExcludedAbsolutePaths());
 
     const valid = stored.filter(
-      (p) => currentlyExcluded.has(p) && isDirectory(p),
+      (p) => currentlyExcluded.has(p) && isFile(p),
     );
 
     // Only persist if we actually dropped something, to avoid unnecessary writes.
