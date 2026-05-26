@@ -1,14 +1,14 @@
 import * as vscode from "vscode";
-import { HiddenFolder } from "../models/HiddenFolder";
+import { HiddenFile } from "../models/HiddenFile";
 import {
-  loadHiddenFolderPaths,
-  saveHiddenFolderPaths,
+  loadHiddenFilePaths,
+  saveHiddenFilePaths,
   getExcludedAbsolutePaths,
 } from "../utils/settingsManager";
 import { requireWorkspaceRoot, isDirectory } from "../utils/pathHelper";
 
 /**
- * Provides the data for the "Hidden Folders" tree view in the Explorer sidebar.
+ * Provides the data for the "Hidden Folders and Files" tree view in the Explorer sidebar.
  *
  * On construction it reconciles workspace storage with `files.exclude`:
  *   - Any path in storage that is no longer excluded (e.g. manually removed from
@@ -16,13 +16,13 @@ import { requireWorkspaceRoot, isDirectory } from "../utils/pathHelper";
  *   - Any path present in `files.exclude` that was added outside the extension is
  *     NOT automatically imported; we only track what the extension manages.
  */
-export class HiddenFoldersProvider implements vscode.TreeDataProvider<HiddenFolder> {
+export class HiddenFileProvider implements vscode.TreeDataProvider<HiddenFile> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
-    HiddenFolder | undefined | null | void
+    HiddenFile | undefined | null | void
   >();
 
   readonly onDidChangeTreeData: vscode.Event<
-    HiddenFolder | undefined | null | void
+    HiddenFile | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
   /** Ordered list of absolute paths the extension is managing. */
@@ -83,11 +83,11 @@ export class HiddenFoldersProvider implements vscode.TreeDataProvider<HiddenFold
 
   // ─── TreeDataProvider ──────────────────────────────────────────────────────
 
-  getTreeItem(element: HiddenFolder): vscode.TreeItem {
+  getTreeItem(element: HiddenFile): vscode.TreeItem {
     return element;
   }
 
-  getChildren(element?: HiddenFolder): vscode.ProviderResult<HiddenFolder[]> {
+  getChildren(element?: HiddenFile): vscode.ProviderResult<HiddenFile[]> {
     // The tree is flat — no nesting.
     if (element) return [];
 
@@ -101,7 +101,7 @@ export class HiddenFoldersProvider implements vscode.TreeDataProvider<HiddenFold
     return this.hiddenPaths
       .slice()
       .sort((a, b) => a.localeCompare(b))
-      .map((absPath) => new HiddenFolder(absPath, root));
+      .map((absPath) => new HiddenFile(absPath, root));
   }
 
   // ─── Private helpers ───────────────────────────────────────────────────────
@@ -112,10 +112,10 @@ export class HiddenFoldersProvider implements vscode.TreeDataProvider<HiddenFold
    * We keep only the paths that:
    *   1. Were previously saved by the extension (stored in workspaceState), AND
    *   2. Are still excluded in `files.exclude` (could have been manually re-added), AND
-   *   3. Actually exist on disk as directories (handles deleted folders gracefully).
+   *   3. Actually exist on disk as files (handles deleted files gracefully).
    */
   private reconcile(): void {
-    const stored = loadHiddenFolderPaths(this.context);
+    const stored = loadHiddenFilePaths(this.context);
     const currentlyExcluded = new Set(getExcludedAbsolutePaths());
 
     const valid = stored.filter(
@@ -124,13 +124,13 @@ export class HiddenFoldersProvider implements vscode.TreeDataProvider<HiddenFold
 
     // Only persist if we actually dropped something, to avoid unnecessary writes.
     if (valid.length !== stored.length) {
-      saveHiddenFolderPaths(this.context, valid);
+      saveHiddenFilePaths(this.context, valid);
     }
 
     this.hiddenPaths = valid;
   }
 
   private persist(): void {
-    saveHiddenFolderPaths(this.context, this.hiddenPaths);
+    saveHiddenFilePaths(this.context, this.hiddenPaths);
   }
 }

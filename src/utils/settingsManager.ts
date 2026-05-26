@@ -92,7 +92,62 @@ function setFilesExclude(exclude: Record<string, boolean>): void {
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Shared exclude/unexclude primitive
+// ---------------------------------------------------------------------------
+
+/**
+ * Adds any path (file or folder) to `files.exclude`.
+ * Both `excludeFolder` and `excludeFile` delegate here.
+ *
+ * @returns The workspace-relative key written (e.g. `"src/generated"` or `"src/config.ts"`).
+ */
+function excludePath(absolutePath: string): string {
+  const root = requireWorkspaceRoot();
+  const key = toRelativePath(absolutePath, root);
+
+  const exclude = getFilesExclude();
+  if (exclude[key] === true) {
+    return key; // Already excluded — nothing to do.
+  }
+
+  exclude[key] = true;
+  setFilesExclude(exclude);
+  return key;
+}
+
+/**
+ * Removes any path (file or folder) from `files.exclude`.
+ * Both `unexcludeFolder` and `unexcludeFile` delegate here.
+ *
+ * Cleans up `files.exclude` entirely when it becomes empty after removal,
+ * to avoid leaving a stale `"files.exclude": {}` in `settings.json`.
+ *
+ * @returns The workspace-relative key removed.
+ */
+function unexcludePath(absolutePath: string): string {
+  const root = requireWorkspaceRoot();
+  const key = toRelativePath(absolutePath, root);
+
+  const exclude = getFilesExclude();
+  if (!(key in exclude)) {
+    return key; // Not excluded — nothing to do.
+  }
+
+  delete exclude[key];
+
+  if (Object.keys(exclude).length === 0) {
+    const settings = readSettings();
+    delete settings["files.exclude"];
+    writeSettings(settings);
+  } else {
+    setFilesExclude(exclude);
+  }
+
+  return key;
+}
+
+// ---------------------------------------------------------------------------
+// Public API — folders
 // ---------------------------------------------------------------------------
 
 /**
@@ -105,20 +160,7 @@ function setFilesExclude(exclude: Record<string, boolean>): void {
  * @returns The relative-path key that was written (e.g. `"src/generated"`).
  */
 export function excludeFolder(absolutePath: string): string {
-  const root = requireWorkspaceRoot();
-  const key = toRelativePath(absolutePath, root);
-
-  const exclude = getFilesExclude();
-
-  if (exclude[key] === true) {
-    // Already excluded — nothing to do.
-    return key;
-  }
-
-  exclude[key] = true;
-  setFilesExclude(exclude);
-
-  return key;
+  return excludePath(absolutePath);
 }
 
 /**
@@ -126,43 +168,82 @@ export function excludeFolder(absolutePath: string): string {
  * visible again in the VS Code Explorer.
  *
  * - Is idempotent: calling it on a folder that isn't excluded is a no-op.
- * - Cleans up the `files.exclude` object entirely if it becomes empty after
- *   removal, to avoid leaving a stale empty object in `settings.json`.
  *
  * @returns The relative-path key that was removed (e.g. `"src/generated"`).
  */
 export function unexcludeFolder(absolutePath: string): string {
-  const root = requireWorkspaceRoot();
-  const key = toRelativePath(absolutePath, root);
-
-  const exclude = getFilesExclude();
-
-  if (!(key in exclude)) {
-    // Not excluded — nothing to do.
-    return key;
-  }
-
-  delete exclude[key];
-
-  // Remove the files.exclude key entirely when empty so settings.json
-  // doesn't accumulate `"files.exclude": {}` noise.
-  if (Object.keys(exclude).length === 0) {
-    const settings = readSettings();
-    delete settings["files.exclude"];
-    writeSettings(settings);
-  } else {
-    setFilesExclude(exclude);
-  }
-
-  return key;
+  return unexcludePath(absolutePath);
 }
 
 /**
- * Removes every folder key that the extension added from `files.exclude`.
+ * Returns `true` if the folder at `absolutePath` is currently listed in
+ * `files.exclude` with a value of `true`.
+ */
+export function isFolderExcluded(absolutePath: string): boolean {
+  const root = getWorkspaceRoot();
+  if (!root) {
+    return false;
+  }
+  const key = toRelativePath(absolutePath, root);
+  return getFilesExclude()[key] === true;
+}
+
+// ---------------------------------------------------------------------------
+// Public API — files
+// ---------------------------------------------------------------------------
+
+/**
+ * Adds the file at `absolutePath` to `files.exclude`, hiding it from the
+ * VS Code Explorer.
+ *
+ * Behaves identically to `excludeFolder` — `files.exclude` treats file and
+ * folder keys the same way.
+ *
+ * - Is idempotent: calling it on an already-hidden file is a no-op.
+ *
+ * @returns The relative-path key that was written (e.g. `"src/config.ts"`).
+ */
+export function excludeFile(absolutePath: string): string {
+  return excludePath(absolutePath);
+}
+
+/**
+ * Removes the file at `absolutePath` from `files.exclude`, making it
+ * visible again in the VS Code Explorer.
+ *
+ * - Is idempotent: calling it on a file that isn't excluded is a no-op.
+ *
+ * @returns The relative-path key that was removed (e.g. `"src/config.ts"`).
+ */
+export function unexcludeFile(absolutePath: string): string {
+  return unexcludePath(absolutePath);
+}
+
+/**
+ * Returns `true` if the file at `absolutePath` is currently listed in
+ * `files.exclude` with a value of `true`.
+ */
+export function isFileExcluded(absolutePath: string): boolean {
+  const root = getWorkspaceRoot();
+  if (!root) {
+    return false;
+  }
+  const key = toRelativePath(absolutePath, root);
+  return getFilesExclude()[key] === true;
+}
+
+// ---------------------------------------------------------------------------
+// Public API — mixed (operates on both files and folders)
+// ---------------------------------------------------------------------------
+
+/**
+ * Removes every path that the extension added from `files.exclude`.
  * Only keys present in `managedPaths` are touched — any exclusions the user
  * added manually are left untouched.
  *
- * @param managedPaths  Absolute paths of all folders currently tracked by
+ * Pass the combined list of hidden folder + hidden file absolute paths.
+ *
+ * @param managedPaths  Absolute paths of all items currently tracked by
  *                      the extension (sourced from workspace storage).
  */
 export function unexcludeAll(managedPaths: string[]): void {
@@ -189,24 +270,11 @@ export function unexcludeAll(managedPaths: string[]): void {
 }
 
 /**
- * Returns `true` if the folder at `absolutePath` is currently listed in
- * `files.exclude` with a value of `true`.
- */
-export function isFolderExcluded(absolutePath: string): boolean {
-  const root = getWorkspaceRoot();
-  if (!root) {
-    return false;
-  }
-  const key = toRelativePath(absolutePath, root);
-  return getFilesExclude()[key] === true;
-}
-
-/**
  * Returns all paths currently in `files.exclude` that are set to `true`,
  * resolved back to absolute paths.
  *
- * Useful for reconciling workspace storage against what's actually in the
- * settings file after an external edit.
+ * Covers both files and folders — useful for reconciling workspace storage
+ * against what's actually in the settings file after an external edit.
  */
 export function getExcludedAbsolutePaths(): string[] {
   const root = getWorkspaceRoot();
@@ -222,28 +290,57 @@ export function getExcludedAbsolutePaths(): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Workspace-storage helpers
+// Workspace-storage helpers — folders
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = "folderHider.hiddenFolders";
+const FOLDER_STORAGE_KEY = "folderHider.hiddenFolders";
 
 /**
  * Persists the list of hidden folder absolute paths to VS Code workspace
  * storage so the panel survives session restarts.
  */
-export function saveHiddenPaths(
+export function saveHiddenFolderPaths(
   context: vscode.ExtensionContext,
   paths: string[],
 ): void {
-  context.workspaceState.update(STORAGE_KEY, paths);
+  context.workspaceState.update(FOLDER_STORAGE_KEY, paths);
 }
 
 /**
  * Retrieves the persisted list of hidden folder absolute paths from workspace
  * storage. Returns `[]` when nothing has been stored yet.
  */
-export function loadHiddenPaths(context: vscode.ExtensionContext): string[] {
-  return context.workspaceState.get<string[]>(STORAGE_KEY) ?? [];
+export function loadHiddenFolderPaths(
+  context: vscode.ExtensionContext,
+): string[] {
+  return context.workspaceState.get<string[]>(FOLDER_STORAGE_KEY) ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Workspace-storage helpers — files
+// ---------------------------------------------------------------------------
+
+const FILE_STORAGE_KEY = "folderHider.hiddenFiles";
+
+/**
+ * Persists the list of hidden file absolute paths to VS Code workspace
+ * storage so the panel survives session restarts.
+ */
+export function saveHiddenFilePaths(
+  context: vscode.ExtensionContext,
+  paths: string[],
+): void {
+  context.workspaceState.update(FILE_STORAGE_KEY, paths);
+}
+
+/**
+ * Retrieves the persisted list of hidden file absolute paths from workspace
+ * storage. Returns `[]` when nothing has been stored yet.
+ */
+export function loadHiddenFilePaths(
+  context: vscode.ExtensionContext,
+): string[] {
+  return context.workspaceState.get<string[]>(FILE_STORAGE_KEY) ?? [];
 }
 
 // ---------------------------------------------------------------------------

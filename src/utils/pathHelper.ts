@@ -99,6 +99,17 @@ export function isDirectory(absolutePath: string): boolean {
 }
 
 /**
+ * Returns `true` if the path points to an existing file.
+ */
+export function isFile(absolutePath: string): boolean {
+  try {
+    return fs.statSync(absolutePath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Returns `true` if the given URI represents a directory that exists on disk
  * and lives inside the current workspace. Convenience wrapper used by the
  * `hideFolder` command before proceeding.
@@ -109,6 +120,19 @@ export function isHideableFolder(uri: vscode.Uri): boolean {
     return false;
   }
   return isDirectory(uri.fsPath) && isInsideWorkspace(uri.fsPath, root);
+}
+
+/**
+ * Returns `true` if the given URI represents a file that exists on disk
+ * and lives inside the current workspace. Convenience wrapper used by the
+ * `hideFile` command before proceeding.
+ */
+export function isHideableFile(uri: vscode.Uri): boolean {
+  const root = getWorkspaceRoot();
+  if (!root) {
+    return false;
+  }
+  return isFile(uri.fsPath) && isInsideWorkspace(uri.fsPath, root);
 }
 
 // ---------------------------------------------------------------------------
@@ -155,10 +179,21 @@ export function getFolderName(absolutePath: string): string {
 }
 
 /**
+ * Returns the file name — used for labels and
+ * notification messages.
+ *
+ * @example
+ * getFileName('/projects/my-app/src/generated/file.js') // → 'file.js'
+ */
+export function getFileName(absolutePath: string): string {
+  return path.basename(absolutePath);
+}
+
+/**
  * Returns the parent directory as a workspace-relative path — used for the
  * `description` field in `HiddenFolder` tree items.
  *
- * Returns `undefined` when the folder sits directly at the workspace root
+ * Returns `undefined` when the folder or the file sits directly at the workspace root
  * (parent would be `.`).
  *
  * @example
