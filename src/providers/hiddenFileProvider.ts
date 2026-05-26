@@ -8,7 +8,7 @@ import {
 import { requireWorkspaceRoot, isFile } from "../utils/pathHelper";
 
 /**
- * Provides the data for the "Hidden Folders and Files" tree view in the Explorer sidebar.
+ * Provides the data for the "Hidden Files" tree view in the Explorer sidebar.
  *
  * On construction it reconciles workspace storage with `files.exclude`:
  *   - Any path in storage that is no longer excluded (e.g. manually removed from

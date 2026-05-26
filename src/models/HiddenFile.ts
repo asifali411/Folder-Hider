@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 
 /**
- * Represents a single hidden file in the "Hidden Folder and File" tree view.
+ * Represents a single hidden file in the "Hidden Files" tree view.
  *
  * Extends `vscode.TreeItem` so it can be returned directly from
  * `HiddenFileProvider.getChildren()` without any mapping step.

@@ -6,7 +6,7 @@ import { unexcludeAll } from "../utils/settingsManager";
 /**
  * Command: folderHider.unhideAll
  *
- * Triggered from the "Hidden Folders and Files" panel title bar action.
+ * Triggered from the "Hidden Folders" and "Hidden Files" panel title bar action.
  * Shows a confirmation prompt, then bulk-removes every managed path from
  * `files.exclude` and clears the provider.
  */
