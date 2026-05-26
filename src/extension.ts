@@ -1,9 +1,14 @@
-import * as vscode from 'vscode';
-import { HiddenFoldersProvider } from './providers/hiddenFolderProvider';
-import { hideFolder } from './commands/hideFolder';
-import { unhideFolder } from './commands/unhideFolder';
-import { unhideAll } from './commands/unhideAll';
-import { HiddenFolder } from './models/HiddenFolder';
+import * as vscode from "vscode";
+import { HiddenFoldersProvider } from "./providers/hiddenFolderProvider";
+import { HiddenFileProvider } from "./providers/hiddenFileProvider";
+
+import { hideFolder } from "./commands/hideFolder";
+import { hideFile } from "./commands/hideFile";
+import { unhideFolder } from "./commands/unhideFolder";
+import { unhideFile } from "./commands/unhideFile";
+import { unhideAll } from "./commands/unhideAll";
+import { HiddenFolder } from "./models/HiddenFolder";
+import { HiddenFile } from "./models/HiddenFile";
 
 /**
  * Called by VS Code when the extension is first activated.
@@ -12,34 +17,47 @@ import { HiddenFolder } from './models/HiddenFolder';
  */
 export function activate(context: vscode.ExtensionContext): void {
   // ------------------------------------------------------------------
-  // Tree-view provider
+  // Tree-view providers
   // ------------------------------------------------------------------
-  const provider = new HiddenFoldersProvider(context);
+  const foldersProvider = new HiddenFoldersProvider(context);
+  const filesProvider = new HiddenFileProvider(context);
 
-  const treeView = vscode.window.createTreeView('folderHider.hiddenFoldersView', {
-    treeDataProvider: provider,
-    showCollapseAll: false,
-    canSelectMany: false,
-  });
+  const foldersTreeView = vscode.window.createTreeView(
+    "folderHider.hiddenFoldersView",
+    {
+      treeDataProvider: foldersProvider,
+      showCollapseAll: false,
+      canSelectMany: false,
+    },
+  );
+
+  const filesTreeView = vscode.window.createTreeView(
+    "folderHider.hiddenFilesView",
+    {
+      treeDataProvider: filesProvider,
+      showCollapseAll: false,
+      canSelectMany: false,
+    },
+  );
 
   // ------------------------------------------------------------------
-  // Commands
+  // Commands — folders
   // ------------------------------------------------------------------
 
   /**
    * folderHider.hideFolder
-   * Triggered from the Explorer context menu.
+   * Triggered from the Explorer context menu on a folder.
    * The URI of the right-clicked item is passed automatically by VS Code.
    */
   const hideFolderCmd = vscode.commands.registerCommand(
-    'folderHider.hideFolder',
+    "folderHider.hideFolder",
     async (uri: vscode.Uri) => {
       if (!uri) {
-        vscode.window.showErrorMessage('Folder Hider: No folder selected.');
+        vscode.window.showErrorMessage("Folder Hider: No folder selected.");
         return;
       }
-      await hideFolder(uri, provider);
-    }
+      await hideFolder(uri, foldersProvider);
+    },
   );
 
   /**
@@ -48,25 +66,69 @@ export function activate(context: vscode.ExtensionContext): void {
    * Receives the HiddenFolder tree-item as its argument.
    */
   const unhideFolderCmd = vscode.commands.registerCommand(
-    'folderHider.unhideFolder',
+    "folderHider.unhideFolder",
     async (item: HiddenFolder) => {
       if (!item) {
-        vscode.window.showErrorMessage('Folder Hider: No hidden folder selected.');
+        vscode.window.showErrorMessage(
+          "Folder Hider: No hidden folder selected.",
+        );
         return;
       }
-      await unhideFolder(item, provider);
-    }
+      await unhideFolder(item, foldersProvider);
+    },
+  );
+
+  // ------------------------------------------------------------------
+  // Commands — files
+  // ------------------------------------------------------------------
+
+  /**
+   * folderHider.hideFile
+   * Triggered from the Explorer context menu on a file.
+   * The URI of the right-clicked item is passed automatically by VS Code.
+   */
+  const hideFileCmd = vscode.commands.registerCommand(
+    "folderHider.hideFile",
+    async (uri: vscode.Uri) => {
+      if (!uri) {
+        vscode.window.showErrorMessage("Folder Hider: No file selected.");
+        return;
+      }
+      await hideFile(uri, filesProvider);
+    },
   );
 
   /**
+   * folderHider.unhideFile
+   * Triggered from the inline action button in the Hidden Files panel.
+   * Receives the HiddenFile tree-item as its argument.
+   */
+  const unhideFileCmd = vscode.commands.registerCommand(
+    "folderHider.unhideFile",
+    async (item: HiddenFile) => {
+      if (!item) {
+        vscode.window.showErrorMessage(
+          "Folder Hider: No hidden file selected.",
+        );
+        return;
+      }
+      await unhideFile(item, filesProvider);
+    },
+  );
+
+  // ------------------------------------------------------------------
+  // Commands — shared
+  // ------------------------------------------------------------------
+
+  /**
    * folderHider.unhideAll
-   * Unhides every folder currently in the Hidden Folders panel.
+   * Unhides every folder and file currently in both panels.
    */
   const unhideAllCmd = vscode.commands.registerCommand(
-    'folderHider.unhideAll',
+    "folderHider.unhideAll",
     async () => {
-      await unhideAll(provider);
-    }
+      await unhideAll(foldersProvider, filesProvider);
+    },
   );
 
   /**
@@ -74,48 +136,63 @@ export function activate(context: vscode.ExtensionContext): void {
    * Manual refresh — useful after external edits to .vscode/settings.json.
    */
   const refreshPanelCmd = vscode.commands.registerCommand(
-    'folderHider.refreshPanel',
+    "folderHider.refreshPanel",
     () => {
-      provider.refresh();
-    }
+      foldersProvider.refresh();
+      filesProvider.refresh();
+    },
   );
 
   // ------------------------------------------------------------------
-  // Watch .vscode/settings.json for external changes
-  // If someone edits files.exclude by hand, keep the panel in sync.
+  // Watch .vscode/settings.json for external changes.
+  // If someone edits files.exclude by hand, keep both panels in sync.
   // ------------------------------------------------------------------
-  const settingsWatcher = createSettingsWatcher(provider);
+  const settingsWatcher = createSettingsWatcher(foldersProvider, filesProvider);
 
   // ------------------------------------------------------------------
   // Register everything for clean disposal on deactivation
   // ------------------------------------------------------------------
   context.subscriptions.push(
-    treeView,
+    foldersTreeView,
+    filesTreeView,
     hideFolderCmd,
+    hideFileCmd,
     unhideFolderCmd,
+    unhideFileCmd,
     unhideAllCmd,
     refreshPanelCmd,
-    settingsWatcher
+    settingsWatcher,
   );
 }
 
 /**
- * Creates a FileSystemWatcher that refreshes the Hidden Folders panel
- * whenever `.vscode/settings.json` is changed outside of this extension.
+ * Creates a FileSystemWatcher that refreshes both the Hidden Folders and
+ * Hidden Files panels whenever `.vscode/settings.json` is changed outside
+ * of this extension.
  */
 function createSettingsWatcher(
-  provider: HiddenFoldersProvider
+  foldersProvider: HiddenFoldersProvider,
+  filesProvider: HiddenFileProvider,
 ): vscode.FileSystemWatcher {
   const pattern = new vscode.RelativePattern(
-    vscode.workspace.workspaceFolders?.[0] ?? '',
-    '.vscode/settings.json'
+    vscode.workspace.workspaceFolders?.[0] ?? "",
+    ".vscode/settings.json",
   );
 
   const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
-  watcher.onDidChange(() => provider.refresh());
-  watcher.onDidCreate(() => provider.refresh());
-  watcher.onDidDelete(() => provider.refresh());
+  watcher.onDidChange(() => {
+    foldersProvider.refresh();
+    filesProvider.refresh();
+  });
+  watcher.onDidCreate(() => {
+    foldersProvider.refresh();
+    filesProvider.refresh();
+  });
+  watcher.onDidDelete(() => {
+    foldersProvider.refresh();
+    filesProvider.refresh();
+  });
 
   return watcher;
 }
