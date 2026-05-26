@@ -1,8 +1,8 @@
 {
   "name": "folder-hider",
   "displayName": "Folder Hider",
-  "description": "Hide and unhide folders in the VS Code explorer to reduce clutter in large projects.",
-  "version": "0.1.0",
+  "description": "Hide and unhide folders and files in the VS Code explorer to reduce clutter in large projects.",
+  "version": "0.2.0",
   "publisher": "AsifAliPM",
   "repository": {
     "type": "git",
@@ -39,13 +39,23 @@
         "icon": "$(eye-closed)"
       },
       {
+        "command": "folderHider.hideFile",
+        "title": "Hide File",
+        "icon": "$(eye-closed)"
+      },
+      {
         "command": "folderHider.unhideFolder",
         "title": "Unhide Folder",
         "icon": "$(eye)"
       },
       {
+        "command": "folderHider.unhideFile",
+        "title": "Unhide File",
+        "icon": "$(eye)"
+      },
+      {
         "command": "folderHider.unhideAll",
-        "title": "Unhide All Folders",
+        "title": "Unhide All",
         "icon": "$(clear-all)"
       },
       {
@@ -60,6 +70,11 @@
           "command": "folderHider.hideFolder",
           "when": "explorerResourceIsFolder",
           "group": "7_modification@1"
+        },
+        {
+          "command": "folderHider.hideFile",
+          "when": "explorerResourceIsFile",
+          "group": "7_modification@2"
         }
       ],
       "view/title": [
@@ -72,12 +87,27 @@
           "command": "folderHider.refreshPanel",
           "when": "view == folderHider.hiddenFoldersView",
           "group": "navigation@2"
+        },
+        {
+          "command": "folderHider.unhideAll",
+          "when": "view == folderHider.hiddenFilesView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "folderHider.refreshPanel",
+          "when": "view == folderHider.hiddenFilesView",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
         {
           "command": "folderHider.unhideFolder",
           "when": "view == folderHider.hiddenFoldersView && viewItem == hiddenFolder",
+          "group": "inline"
+        },
+        {
+          "command": "folderHider.unhideFile",
+          "when": "view == folderHider.hiddenFilesView && viewItem == hiddenFile",
           "group": "inline"
         }
       ]
@@ -90,6 +120,13 @@
           "icon": "media/icon.png",
           "contextualTitle": "Hidden Folders",
           "when": "workbenchState != empty"
+        },
+        {
+          "id": "folderHider.hiddenFilesView",
+          "name": "Hidden Files",
+          "icon": "media/icon.png",
+          "contextualTitle": "Hidden Files",
+          "when": "workbenchState != empty"
         }
       ]
     },
@@ -97,6 +134,10 @@
       {
         "view": "folderHider.hiddenFoldersView",
         "contents": "No folders are hidden.\nRight-click any folder in the Explorer and select **Hide Folder** to get started."
+      },
+      {
+        "view": "folderHider.hiddenFilesView",
+        "contents": "No files are hidden.\nRight-click any file in the Explorer and select **Hide File** to get started."
       }
     ],
     "configuration": {
@@ -105,12 +146,12 @@
         "folderHider.persistAcrossSessions": {
           "type": "boolean",
           "default": true,
-          "description": "Remember hidden folders when VS Code is restarted."
+          "description": "Remember hidden folders and files when VS Code is restarted."
         },
         "folderHider.showHiddenCount": {
           "type": "boolean",
           "default": true,
-          "description": "Show the number of hidden folders in the status bar."
+          "description": "Show the number of hidden folders and files in the status bar."
         }
       }
     }
